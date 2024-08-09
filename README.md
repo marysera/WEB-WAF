@@ -4,18 +4,28 @@
 
 更新日志：<a href="https://xn--ivr.net/index.php/archives/waf.html" rel="nofollow">点击查看</a>
 
+<h2>介绍:</h2>
+
+支持web管理 黑名单 白名单 IP限制 
+支持关键字过滤(需要自行选择)
+支持防御轻量DDOS
+
 <h2>使用说明:</h2>
 
 下载后立刻更改admin.php里的用户名和密码
 
 在tmp目录里创建一个文件夹
+
+<span style="color:#333333">```
 sudo mkdir /tmp/waf
 sudo chmod 777 /tmp/waf
+```</span> 
+
 定期清理 /tmp/waf 里的文件
 
 将下面一段插入到网站的index.php的最前面
 
-'''
+<span style="color:#333333">```
 // 获取真实 IP 地址的函数
 function getRealIpAddr() {
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
@@ -50,4 +60,4 @@ if (in_array($ip, $whitelistedIps)) {
 else{
     include 'waf.php'; 
 }
-'''
+```</span> 
