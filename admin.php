@@ -402,11 +402,11 @@ if (file_exists($accessLogFile)) {
             <div class="form-section">
                 <h2>使用说明</h2>
             </br>
-            
+            <iframe src="https://marysera.github.io/waf/index.html" width="100%" height="500"></iframe>
             </br>
             <div class="link-container">
-            <a href="https://xn--ivr.net/" class="jump-link">官网</a>
-            <a href="https://www.example.com" class="jump-link">访问Github</a>
+            <a href="https://xn--ivr.net/index.php/archives/waf.html" class="jump-link">官网</a>
+            <a href="https://github.com/marysera/SHERRY-S-WAF" class="jump-link">访问Github</a>
             </div>
 
             </div>
