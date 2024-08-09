@@ -1,17 +1,17 @@
 <h1>新一代轻量化网页软WAF</h1>
 
-只建议小型博客网站使用
+只建议小型博客网站使用 
 
-博客主页:https://xn--ivr.net/
+更新日志：<a href="https://xn--ivr.net/index.php/archives/waf.html" rel="nofollow">点击查看</a>
 
-使用说明:
+<h2>使用说明:</h2>
 
 下载后立刻更改admin.php里的用户名和密码
 
 在tmp目录里创建一个文件夹
 sudo mkdir /tmp/waf
 sudo chmod 777 /tmp/waf
-
+定期清理 /tmp/waf 里的文件
 
 将下面一段插入到网站的index.php的最前面
 
