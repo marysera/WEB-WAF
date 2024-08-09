@@ -7,7 +7,9 @@
 <h2>介绍:</h2>
 
 支持web管理 黑名单 白名单 IP限制 
+
 支持关键字过滤(需要自行选择)
+
 支持防御轻量DDOS
 
 <h2>使用说明:</h2>
@@ -16,10 +18,10 @@
 
 在tmp目录里创建一个文件夹
 
-
+```sh
 sudo mkdir /tmp/waf
-
 sudo chmod 777 /tmp/waf
+```
 
 定期清理 /tmp/waf 里的文件
 
