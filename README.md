@@ -1,4 +1,4 @@
-新一代轻量化网页软WAF
+<h1>新一代轻量化网页软WAF</h1>
 
 只建议小型博客网站使用
 
@@ -15,6 +15,7 @@ sudo chmod 777 /tmp/waf
 
 将下面一段插入到网站的index.php的最前面
 
+'''
 // 获取真实 IP 地址的函数
 function getRealIpAddr() {
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
@@ -49,3 +50,4 @@ if (in_array($ip, $whitelistedIps)) {
 else{
     include 'waf.php'; 
 }
+'''
