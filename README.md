@@ -16,10 +16,10 @@
 
 在tmp目录里创建一个文件夹
 
-<span style="color:#333333">```
+
 sudo mkdir /tmp/waf
+
 sudo chmod 777 /tmp/waf
-```</span> 
 
 定期清理 /tmp/waf 里的文件
 
@@ -60,4 +60,5 @@ if (in_array($ip, $whitelistedIps)) {
 else{
     include 'waf.php'; 
 }
-```</span> 
+
+```</span>
