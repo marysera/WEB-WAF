@@ -25,8 +25,8 @@ sudo chmod 777 /tmp/waf
 
 将下面一段代码插入到网站的index.php的最前面
 
-<span style="color:#333333">```
 
+<?php
 // 获取真实 IP 地址的函数
 function getRealIpAddr() {
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
@@ -61,6 +61,6 @@ if (in_array($ip, $whitelistedIps)) {
 else{
     include 'waf.php'; 
 }
+?>
 
-```</span>
 
