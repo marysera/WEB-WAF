@@ -3,7 +3,7 @@
 // 文件路径
 $blacklistFile = '/tmp/waf/blacklist.txt';
 $keywordsFile = '/tmp/waf/keywords.txt';
-$accessFile = '/tmp/waf/access_log_' . $_SERVER['REMOTE_ADDR'] . '.txt';
+$accessFile = '/tmp/waf/access_log_' . $ip . '.txt';
 
 // 创建访问日志文件
 if (!file_exists($accessFile)) {
@@ -16,8 +16,6 @@ $blacklistedIps = file($blacklistFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_L
 // 检查是否在黑名单中
 if (in_array($ip, $blacklistedIps)) {
     // 如果 IP 在黑名单中，禁止访问
-    //header('HTTP/1.0 403 Forbidden');
-    //echo "Access forbidden.";
     header('Location: http://127.0.0.1');
     exit;
 }
@@ -49,7 +47,6 @@ if ($isDangerous) {
     file_put_contents($accessLogFile, $entry, FILE_APPEND);
 
     // 禁止访问
-    //header('HTTP/1.0 403 Forbidden');
     header('Location: http://127.0.0.1');
     exit;
 }
@@ -66,7 +63,7 @@ $recentAccessTimes = array_filter($accessTimes, function($time) use ($now) {
 
 // 如果访问次数超过x次，记录到黑名单文件
 if (count($recentAccessTimes) >= 30) {
-    file_put_contents($blacklistFile, $_SERVER['REMOTE_ADDR'] . "\n", FILE_APPEND);
+    file_put_contents($blacklistFile, $ip . "\n", FILE_APPEND);
     header('Location: http://127.0.0.1');
     exit(); // 确保脚本在重定向后不再执行
 }

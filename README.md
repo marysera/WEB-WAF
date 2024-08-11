@@ -2,6 +2,8 @@
 
 只建议小型博客网站使用 
 
+当前版本 1.1
+
 更新日志：<a href="https://xn--ivr.net/index.php/archives/waf.html" rel="nofollow">点击查看</a>
 
 <h2>介绍:</h2>
@@ -24,6 +26,8 @@ sudo chmod 777 /tmp/waf
 ```
 
 定期清理 /tmp/waf 里的文件
+
+waf.php不要放在网站根目录
 
 将下面代码插入到网站的index.php的最前面
 
@@ -62,7 +66,7 @@ if (in_array($ip, $whitelistedIps)) {
 
 }
 else{
-    include 'waf.php'; 
+    include '/存放的目录/waf.php'; 
 }
 ?>
 ```
