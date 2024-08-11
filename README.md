@@ -2,7 +2,7 @@
 
 只建议小型博客网站使用 
 
-当前版本 1.1
+当前版本 1.2
 
 更新日志：<a href="https://xn--ivr.net/index.php/archives/waf.html" rel="nofollow">点击查看</a>
 

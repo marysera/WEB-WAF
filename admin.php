@@ -51,6 +51,37 @@ if (in_array($ip, $blacklistedIps)) {
 }
 
 
+class Captcha {
+    private $code;
+    
+    public function __construct() {
+        $this->code = $this->generateCode();
+    }
+
+    public function getCode() {
+        return $this->code;
+    }
+
+    public function getImage() {
+        $image = imagecreatetruecolor(100, 30);
+        $bgColor = imagecolorallocate($image, 255, 255, 255);
+        $textColor = imagecolorallocate($image, 0, 0, 0);
+
+        imagefilledrectangle($image, 0, 0, 100, 30, $bgColor);
+        imagestring($image, 5, 10, 5, $this->code, $textColor);
+        
+        ob_start();
+        imagepng($image);
+        $imageData = ob_get_clean();
+        imagedestroy($image);
+
+        return 'data:image/png;base64,' . base64_encode($imageData);
+    }
+
+    private function generateCode() {
+        return substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
+    }
+}
 
 // 登录验证
 function checkLogin($username, $password) {
@@ -61,21 +92,33 @@ function checkLogin($username, $password) {
     return isset($users[$username]) && password_verify($password, $users[$username]);
 }
 
-
-
 // 处理登录
 if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    
-    if (checkLogin($username, $password)) {
+    $captcha = $_POST['captcha'];
+
+    if (checkLogin($username, $password) && validateCaptcha($captcha)) {
         $_SESSION['loggedin'] = true;
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
-        $loginError = '用户名或密码错误';
+        $loginError = '用户名、密码或验证码错误';
     }
 }
+
+// 生成验证码
+function generateCaptcha() {
+    $captcha = new Captcha();
+    $_SESSION['captcha'] = $captcha->getCode();
+    return $captcha->getImage();
+}
+
+// 验证验证码
+function validateCaptcha($input) {
+    return isset($_SESSION['captcha']) && $_SESSION['captcha'] === $input;
+}
+
 
 // 处理登出
 if (isset($_GET['logout'])) {
@@ -90,7 +133,6 @@ if (!isset($_SESSION['loggedin'])) {
     $showLoginForm = true;
 } else {
     $showLoginForm = false;
-
 
 // 记录访问信息
 $timestamp = date('Y-m-d H:i:s');
@@ -135,7 +177,7 @@ if (!$isWhitelisted) {
 
 // 手动添加和删除白名单功能
 if (isset($_POST['addWhitelist'])) {
-    $ipToAdd = trim($_POST['ipToAdd']);
+    $ipToAdd = trim($_POST['Whitelistipchange']);
     if (filter_var($ipToAdd, FILTER_VALIDATE_IP)) {
         file_put_contents($whitelistFile, $ipToAdd . PHP_EOL, FILE_APPEND | LOCK_EX);
         $statusMessage = "IP 地址 $ipToAdd 已添加到白名单。";
@@ -145,7 +187,7 @@ if (isset($_POST['addWhitelist'])) {
 }
 
 if (isset($_POST['removeWhitelist'])) {
-    $ipToRemove = trim($_POST['ipToRemove']);
+    $ipToRemove = trim($_POST['Whitelistipchange']);
     if (filter_var($ipToRemove, FILTER_VALIDATE_IP)) {
         // 从白名单数组中移除指定 IP
         $whitelistedIps = array_filter($whitelistedIps, function($item) use ($ipToRemove) {
@@ -162,7 +204,7 @@ if (isset($_POST['removeWhitelist'])) {
 
 // 手动添加和删除黑名单功能
 if (isset($_POST['addBlacklist'])) {
-    $ipToAdd = trim($_POST['ipToAdd']);
+    $ipToAdd = trim($_POST['Blacklistipchange']);
     if (filter_var($ipToAdd, FILTER_VALIDATE_IP)) {
         file_put_contents($blacklistFile, $ipToAdd . PHP_EOL, FILE_APPEND | LOCK_EX);
         $statusMessage = "IP 地址 $ipToAdd 已添加到黑名单。";
@@ -172,7 +214,7 @@ if (isset($_POST['addBlacklist'])) {
 }
 
 if (isset($_POST['removeBlacklist'])) {
-    $ipToRemove = trim($_POST['ipToRemove']);
+    $ipToRemove = trim($_POST['Blacklistipchange']);
     if (filter_var($ipToRemove, FILTER_VALIDATE_IP)) {
         // 从黑名单数组中移除指定 IP
         $blacklistedIps = array_filter($blacklistedIps, function($item) use ($ipToRemove) {
@@ -189,7 +231,7 @@ if (isset($_POST['removeBlacklist'])) {
 
 // 添加危险关键词
 if (isset($_POST['addKeyword'])) {
-    $keywordToAdd = trim($_POST['keywordToAdd']);
+    $keywordToAdd = trim($_POST['keywordchange']);
     if (!empty($keywordToAdd)) {
         file_put_contents($keywordsFile, $keywordToAdd . PHP_EOL, FILE_APPEND | LOCK_EX);
         $statusMessage = "关键词 '$keywordToAdd' 已添加到危险关键词列表。";
@@ -200,7 +242,7 @@ if (isset($_POST['addKeyword'])) {
 
 // 删除危险关键词
 if (isset($_POST['removeKeyword'])) {
-    $keywordToRemove = trim($_POST['keywordToRemove']);
+    $keywordToRemove = trim($_POST['keywordchange']);
     if (!empty($keywordToRemove)) {
         // 从危险关键词数组中移除指定关键词
         $dangerousKeywords = array_filter($dangerousKeywords, function($item) use ($keywordToRemove) {
@@ -218,7 +260,7 @@ if (isset($_POST['removeKeyword'])) {
 // 清空 IP 记录
 if (isset($_POST['clearIpRecords'])) {
     file_put_contents($accessLogFile, '');
-    $statusMessage = "IP 记录已清空。";
+    $statusMessage = "访问日志已清空。";
 }
 
 // 计算访问日志行数
@@ -233,14 +275,14 @@ if (file_exists($accessLogFile)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHERRY'S 网页WAF 1.1</title>
-    <link rel="shortcut icon" href="https://cdn.xn--ivr.net/image/tx/favicon.ico" /> 
+    <title>SHERRY'S 网页WAF 1.2</title>
+    <link rel="shortcut icon" href="https://cdn.xn--ivr.net/image/tx/favicon.ico" />
     <style>
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f4f8;
+            background-color: #f5f7f9;
             color: #333;
             display: flex;
             justify-content: center;
@@ -250,16 +292,18 @@ if (file_exists($accessLogFile)) {
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-attachment: fixed; /* 确保背景图片在滚动时不会移动 */
+            background-attachment: fixed;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .container {
             width: 90%;
-            max-width: 1000px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
             box-sizing: border-box;
+            transition: background 0.3s ease;
         }
         .header {
             text-align: center;
@@ -267,78 +311,165 @@ if (file_exists($accessLogFile)) {
         }
         .header h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 32px;
             color: #007bff;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
-        .form-section {
+        .form-section, .logs-section, .info-section {
             margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
+            padding: 20px;
             border-radius: 8px;
-            background: #fff;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s ease, border 0.3s ease;
         }
-        .form-section h2 {
+        .form-section h2, .logs-section h2, .info-section h2 {
             margin-top: 0;
             font-size: 24px;
             color: #007bff;
+            font-weight: bold;
         }
         .form-section input[type="text"],
         .form-section input[type="password"],
-        .form-section input[type="submit"] {
-            width: calc(100% - 22px);
-            padding: 10px;
+        .form-section input[type="submit"],
+        .info-section input[type="submit"] {
+            width: calc(100% - 24px);
+            padding: 12px;
             margin: 8px 0;
             box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
             font-size: 16px;
+            transition: border-color 0.3s ease;
         }
-        .form-section input[type="submit"] {
+        .form-section input[type="submit"], .info-section input[type="submit"] {
             background-color: #007bff;
             border: none;
             color: white;
             cursor: pointer;
             font-weight: bold;
+            transition: background-color 0.3s ease;
         }
-        .form-section input[type="submit"]:hover {
+        .form-section input[type="submit"]:hover, .info-section input[type="submit"]:hover {
             background-color: #0056b3;
+        }
+        .info-section {
+            background-color: #f0f4f8; /* 背景颜色 */
+            border: 1px solid #e1e5ea; /* 边框颜色 */
+        }
+        .info-section iframe {
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .info-section p {
+            margin: 0;
+            padding: 0;
+            font-size: 16px;
+            color: #666;
+        }
+        .info-section a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .info-section a:hover {
+            text-decoration: underline;
+        }
+        .link-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .jump-link {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007bff;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .jump-link:hover {
+            background-color: #0056b3;
+        }
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+        .theme-toggle button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .theme-toggle button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+        .dark-mode .container {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        .dark-mode .form-section, .dark-mode .logs-section, .dark-mode .info-section {
+            background: #444;
+            border: 1px solid #555;
+        }
+        .dark-mode .logs-section pre, .dark-mode .info-section pre {
+            background-color: #222; /* 黑色模式下的背景色 */
+            color: #ccc; /* 黑色模式下的字体颜色 */
+        }
+        .dark-mode .status-message.success {
+            background-color: #155724;
+        }
+        .dark-mode .status-message.error {
+            background-color: #721c24;
+        }
+        .dark-mode input[type="text"],
+        .dark-mode input[type="password"] {
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #666;
+        }
+        .dark-mode input[type="text"]::placeholder,
+        .dark-mode input[type="password"]::placeholder {
+            color: #ccc;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
         }
         .logs-section {
             margin-bottom: 20px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid #ddd;
-            border-radius: 8px;
+            border-radius: 12px;
             background: #fff;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
         .logs-section h2 {
             margin-top: 0;
-            font-size: 24px;
+            font-size: 28px;
             color: #007bff;
         }
         .logs-section pre {
             white-space: pre-wrap;
             font-size: 14px;
             background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            line-height: 1.4;
-        }
-        .logs-section pre code {
-            display: block;
-            margin: 0;
-            padding: 0;
-            font-size: 14px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
-        .logs-section pre code span {
-            display: inline-block;
-            padding: 0 5px;
-            margin: 0 2px;
-            background-color: #ffcccb;
-            border-radius: 2px;
+            padding: 12px;
+            border-radius: 6px;
+            line-height: 1.6;
         }
         .status-message {
             padding: 10px;
@@ -358,28 +489,12 @@ if (file_exists($accessLogFile)) {
                 border-radius: 0;
             }
         }
-        .link-container {
-            text-align: center;
-        }
-        .jump-link {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 10px;
-            text-decoration: none;
-            color: #fff;
-            background-color: #007bff;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        .jump-link:hover {
-            background-color: #0056b3;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>SHERRY'S 网页WAF 1.1</h1>
+            <h1>SHERRY'S 网页WAF 1.2</h1>
         </div>
 
         <?php if ($showLoginForm): ?>
@@ -391,6 +506,8 @@ if (file_exists($accessLogFile)) {
                 <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
                     <input type="text" name="username" placeholder="用户名" required><br>
                     <input type="password" name="password" placeholder="密码" required><br>
+                    <img src="<?php echo generateCaptcha(); ?>" alt="验证码"><br>
+                    <input type="text" name="captcha" placeholder="输入验证码" required><br>
                     <input type="submit" name="login" value="登录">
                 </form>
             </div>
@@ -399,37 +516,30 @@ if (file_exists($accessLogFile)) {
                 <div class="status-message success"><?php echo $statusMessage; ?></div>
             <?php endif; ?>
             <!-- 使用说明 -->
-            <div class="form-section">
+            <div class="info-section">
                 <h2>使用说明</h2>
-            </br>
-            <iframe src="https://marysera.github.io/waf/index.html" width="100%" height="500"></iframe>
-            </br>
-            <div class="link-container">
-            <a href="https://xn--ivr.net/index.php/archives/waf.html" class="jump-link">官网</a>
-            <a href="https://github.com/marysera/SHERRY-S-WAF" class="jump-link">访问Github</a>
-            </div>
-
+                <iframe src="https://marysera.github.io/waf/index.html" width="100%" height="300" style="border: none;"></iframe>
+                <p>请阅读上面的说明文档，以了解如何使用和配置</p>
+                <div class="link-container">
+                    <a href="https://xn--ivr.net/index.php/archives/waf.html" style="color: white;" class="jump-link">官网</a>
+                    <a href="https://github.com/marysera/SHERRY-S-WAF" style="color: white;" class="jump-link">访问Github</a>
+                </div>
             </div>
             <!-- 刷新页面 -->
             <div class="form-section">
-                <h2>刷新页面</h2>
+                <h2>刷新页面(修改后点击刷新)</h2>
                 <form action="" method="get">
                     <input type="submit" value="刷新页面">
                 </form>
             </div>
             <div class="form-section">
-                <h2>添加到白名单</h2>
+                <h2>白名单IP修改</h2>
                 <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="ipToAdd" placeholder="要添加到白名单的 IP 地址" required><br>
-                    <input type="submit" name="addWhitelist" value="添加到白名单">
-                </form>
-            </div>
-
-            <div class="form-section">
-                <h2>移除白名单中的 IP 地址</h2>
-                <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="ipToRemove" placeholder="要移除的白名单中的 IP 地址" required><br>
-                    <input type="submit" name="removeWhitelist" value="从白名单中移除">
+                    <input type="text" name="Whitelistipchange" placeholder="要添加或移除的白名单的 IP 地址" required><br>
+                    <div class="button-group">
+                        <input type="submit" name="addWhitelist" value="添加到白名单">
+                        <input type="submit" name="removeWhitelist" value="从白名单中移除">
+                    </div>
                 </form>
             </div>
 
@@ -439,18 +549,13 @@ if (file_exists($accessLogFile)) {
             </div>
 
             <div class="form-section">
-                <h2>添加到黑名单</h2>
+                <h2>黑名单IP修改</h2>
                 <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="ipToAdd" placeholder="要添加到黑名单的 IP 地址" required><br>
-                    <input type="submit" name="addBlacklist" value="添加到黑名单">
-                </form>
-            </div>
-
-            <div class="form-section">
-                <h2>移除黑名单中的 IP 地址</h2>
-                <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="ipToRemove" placeholder="要移除的黑名单中的 IP 地址" required><br>
-                    <input type="submit" name="removeBlacklist" value="从黑名单中移除">
+                    <input type="text" name="Blacklistipchange" placeholder="要添加或移除黑名单的 IP 地址" required><br>
+                    <div class="button-group">
+                        <input type="submit" name="addBlacklist" value="添加到黑名单">
+                        <input type="submit" name="removeBlacklist" value="从黑名单中移除">
+                    </div>
                 </form>
             </div>
 
@@ -460,18 +565,13 @@ if (file_exists($accessLogFile)) {
             </div>
 
             <div class="form-section">
-                <h2>添加危险关键词</h2>
+                <h2>关键词修改(修改前先把IP加入白名单内)</h2>
                 <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="keywordToAdd" placeholder="要添加的危险关键词" required><br>
-                    <input type="submit" name="addKeyword" value="添加关键词">
-                </form>
-            </div>
-
-            <div class="form-section">
-                <h2>移除危险关键词</h2>
-                <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="text" name="keywordToRemove" placeholder="要移除的危险关键词" required><br>
-                    <input type="submit" name="removeKeyword" value="移除关键词">
+                    <input type="text" name="keywordchange" placeholder="要添加或移除的危险关键词" required><br>
+                    <div class="button-group">
+                        <input type="submit" name="addKeyword" value="添加关键词">
+                        <input type="submit" name="removeKeyword" value="移除关键词">
+                    </div>
                 </form>
             </div>
 
@@ -481,10 +581,11 @@ if (file_exists($accessLogFile)) {
             </div>
 
             <div class="form-section">
-                <h2>清空 IP 记录</h2>
+                <h2>清空访问日志记录</h2>
                 <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-                    <input type="submit" name="clearIpRecords" value="清空 IP 记录">
-                    <span></br>当前日志行数: <?php echo $logLineCount; ?></span>
+                    <input type="submit" name="clearIpRecords" value="清空访问日志">
+                    </br>
+                    <span>当前日志行数: <?php echo $logLineCount; ?></span>
                 </form>
             </div>
 
@@ -503,9 +604,37 @@ if (file_exists($accessLogFile)) {
                     <input type="submit" name="logout" value="退出登录">
                 </form>
             </div>
-
         <?php endif; ?>
     </div>
+
+    <!-- 切换主题按钮 -->
+    <div class="theme-toggle">
+        <button onclick="toggleTheme()">切换主题</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleButton = document.querySelector('.theme-toggle button');
+            const body = document.body;
+
+            // Check local storage for saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                body.classList.add(savedTheme);
+            }
+
+            // Toggle theme on button click
+            themeToggleButton.addEventListener('click', () => {
+                if (body.classList.contains('dark-mode')) {
+                    body.classList.remove('dark-mode');
+                    localStorage.setItem('theme', '');
+                } else {
+                    body.classList.add('dark-mode');
+                    localStorage.setItem('theme', 'dark-mode');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 
