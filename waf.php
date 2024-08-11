@@ -3,7 +3,7 @@
 // 文件路径
 $blacklistFile = '/tmp/waf/blacklist.txt';
 $keywordsFile = '/tmp/waf/keywords.txt';
-$accessFile = '/tmp/waf/access_log_' . $ip . '.txt';
+$accessFile = '/tmp/waf/log/access_log_' . $ip . '.txt';
 
 // 创建访问日志文件
 if (!file_exists($accessFile)) {

@@ -18,11 +18,14 @@
 
 下载后立刻更改admin.php里的用户名和密码
 
-在tmp目录里创建一个文件夹
+在tmp目录里创建两个文件夹
+
+需要自己在/tmp/waf/里创建3个文件 whitelist.txt blacklist.txt keywords.txt
 
 ```sh
 sudo mkdir /tmp/waf
-sudo chmod 777 /tmp/waf
+sudo mkdir /tmp/waf/log
+sudo chmod 777 /tmp/waf/*
 ```
 
 定期清理 /tmp/waf 里的文件
