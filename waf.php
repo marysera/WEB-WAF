@@ -1,13 +1,21 @@
 <?php
-
+error_reporting(0);
 // 文件路径
 $blacklistFile = '/tmp/waf/blacklist.txt';
 $keywordsFile = '/tmp/waf/keywords.txt';
 $accessFile = '/tmp/waf/log/access_log_' . $ip . '.txt';
 
-// 创建访问日志文件
+// 创建文件
 if (!file_exists($accessFile)) {
     file_put_contents($accessFile, '');
+}
+
+if (!file_exists($keywordsFile)) {
+    file_put_contents($keywordsFile, '');
+}
+
+if (!file_exists($blacklistFile)) {
+    file_put_contents($blacklistFile, '');
 }
 
 // 读取黑名单

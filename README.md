@@ -2,7 +2,7 @@
 
 只建议小型博客网站使用 
 
-当前版本 1.2
+当前版本 1.2.1
 
 更新日志：<a href="https://xn--ivr.net/index.php/archives/waf.html" rel="nofollow">点击查看</a>
 
@@ -59,6 +59,9 @@ $whitelistFile = '/tmp/waf/whitelist.txt';
 $accessLogFile = '/tmp/waf/access_log.txt';
 $whitelistedIps = file($whitelistFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
+if (!file_exists($whitelistFile)) {
+    file_put_contents($whitelistFile, '');
+}
 // 检查是否在白名单中
 if (in_array($ip, $whitelistedIps)) {
     // 如果 IP 在白名单中，允许访问
