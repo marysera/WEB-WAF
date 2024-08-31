@@ -20,8 +20,6 @@
 
 在tmp目录里创建两个文件夹
 
-需要自己在/tmp/waf/里创建3个文件 whitelist.txt blacklist.txt keywords.txt
-
 ```sh
 sudo mkdir /tmp/waf
 sudo mkdir /tmp/waf/log
@@ -77,3 +75,5 @@ else{
 ?>
 ```
 
+如果没有权限
+需要自己在/tmp/waf/里创建3个文件 whitelist.txt blacklist.txt keywords.txt
